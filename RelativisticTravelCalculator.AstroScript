@@ -1,0 +1,132 @@
+#plugin     Relativistic Travel Calculator
+#author		Sophie Horne
+#desc		Plugin to calculate travel time between two points, taking into account relativistic effects
+#button     RelativisticTravelCalculator_Button.bmp
+
+Dim speedOfTravel
+
+speedOfTravel = 0.7
+
+' Get the currently selected sector
+sector = GetCurrentSector()
+selected = sector.SelectedCount()
+
+If selected <> 2 Then
+	MsgBox "You must select 2 points to use for calculation."
+Else
+    s1 = sector.GetSelected(0)
+    s2 = sector.GetSelected(1)
+
+    If TimeCalculationWindow(s1, s2) Then
+        stationaryDistance = CalculateDistanceStationary(s1, s2)
+		relativeDistance = CalculateDistanceRelative(stationaryDistance)
+		stationaryTime = CalculateTime(stationaryDistance)
+		relativeTime = CalculateTime(relativeDistance)
+
+		MsgBox("When an object is travelling at " & speedOfTravel & "c, between '" & s1.name & "' and '" & s2.name & "':" & vbNewLine & vbNewLine &_
+			"||| Object's Frame of Reference |||" & vbNewLine &_
+			"Distance: " & round(relativeDistance, 2) & " ly" & vbNewLine &_
+			"Travel Time: " & round(relativeTime, 2) & " years" & vbNewLine & vbNewLine &_
+			"||| Stationary Observer's Frame of Reference |||" & vbNewLine &_
+			"Distance: " & round(stationaryDistance, 2) & " ly" & vbNewLine &_
+			"Travel Time: " & round(stationaryTime, 2) & " years" & vbNewLine & vbNewLine &_
+			"For every 1 year aboard the moving object, " & round(stationaryTime / relativeTime, 2) & " years pass for a stationary observer.")
+    End If
+End If
+
+Function CalculateDistanceStationary(s1, s2)
+	' Get distance between two points	
+	dx = s2.x - s1.x
+	dy = s2.y - s1.y
+	dz = s2.z - s1.z
+	
+    ' Distance in light years
+	CalculateDistanceStationary = Sqr((dx * dx) + (dy * dy) + (dz * dz))
+End Function
+
+Function CalculateDistanceRelative(distance)
+    ' Speed (as a fraction of c)
+    speed = speedOfTravel
+
+	' Lorentz contraction adjusted distance
+    gamma = 1/Sqr(1 - speed^2 / 1^2)
+    CalculateDistanceRelative = distance/gamma
+End Function
+
+Function CalculateTime(distance)
+	CalculateTime = distance / speedOfTravel
+End Function
+
+Function ValidateSpeedInput(input)
+	If input > 0 And input < 1 Then
+		ValidateSpeedInput = true
+	Else
+		MsgBox("Speed must be greater than 0c and less than 1c.")
+		ValidateSpeedInput = false
+	End If
+End Function
+
+Function TimeCalculationWindow(s1, s2)
+	w = NewDialogWindow()
+	w.Width = 450
+	w.Height = 280
+	w.Caption = "Time Calculator"
+	w.Centered = true
+
+	' Point 1 Coords
+	p1n = w.AddLabel()
+	p1n.SetPosition 35, 45, 80, 24
+	p1n.Caption = "Origin: " & s1.name
+
+	p1 = w.AddLabel()
+ 	p1.SetPosition 35, 65, 80, 24
+ 	p1.Caption = "Coords:"
+
+	p1x = w.AddLabel()
+ 	p1x.SetPosition 85, 65, 80, 24
+ 	p1x.Caption = "X: " & s1.x
+
+	p1y = w.AddLabel()
+ 	p1y.SetPosition 185, 65, 80, 24
+ 	p1y.Caption = "Y: " & s1.y
+
+	p1z = w.AddLabel()
+ 	p1z.SetPosition 285, 65, 80, 24
+ 	p1z.Caption = "Z: " & s1.z
+
+	' Point 2 Coords
+	p2n = w.AddLabel()
+	p2n.SetPosition 35, 105, 80, 24
+	p2n.Caption = "Destination: " & s2.name
+
+    p2 = w.AddLabel()
+ 	p2.SetPosition 35, 125, 80, 24
+ 	p2.Caption = "Coords:"
+
+	p2x = w.AddLabel()
+ 	p2x.SetPosition 85, 125, 80, 24
+ 	p2x.Caption = "X: " & s2.x
+
+	p2y = w.AddLabel()
+ 	p2y.SetPosition 185, 125, 80, 24
+ 	p2y.Caption = "Y: " & s2.y
+
+	p2z = w.AddLabel()
+ 	p2z.SetPosition 285, 125, 80, 24
+ 	p2z.Caption = "Z: " & s2.z
+
+	' Allow user to set speed relative to c
+    speedLabel = w.AddLabel()
+ 	speedLabel.SetPosition 35, 165, 80, 24
+ 	speedLabel.Caption = "Speed (c):"
+	speedInput = w.AddTextEdit()
+	speedInput.SetPosition 85, 162, 80, 24
+	speedInput.Text = speedOfTravel
+	 	
+	If w.ShowModal And ValidateSpeedInput(speedInput.Text) Then		
+		speedOfTravel = speedInput.Text
+		TimeCalculationWindow = true
+	Else
+		TimeCalculationWindow = false
+	End If
+End Function
